@@ -1,0 +1,207 @@
+version: "3.8"
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-StrongPassword123!}
+      MSSQL_PID: Express
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - backend-orchid
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "timeout 10 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 1G
+    restart: unless-stopped
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Console Web UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-orchid_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-SecurePassword@1234}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001" --anonymous
+    networks:
+      - backend-orchid
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    restart: unless-stopped
+
+  # Spring Boot Application
+  orchid-service:
+    container_name: orchid-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=OrchidDB;trustServerCertificate=true
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-StrongPassword123!}
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.SQLServer2012Dialect
+
+      # MinIO Configuration - Sửa để khớp với biến môi trường
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-orchid_admin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-SecurePassword@1234}
+      MINIO_BUCKET: ${MINIO_BUCKET:-orchid-bucket}
+
+      # Logging Configuration
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_COM_orchidservice: DEBUG
+      LOGGING_PATTERN_CONSOLE: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+      # Actuator Configuration
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
+
+      # Application Configuration
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      SERVER_COMPRESSION_ENABLED: "true"
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-myVerySecretKeyForJWTTokensInProductionEnvironment123456}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - backend-orchid
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend-orchid
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - backend-orchid
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  # Backup Service
+  backup-service:
+    image: alpine:latest
+    container_name: backup-service
+    volumes:
+      - sqlserver-data:/backup/sqlserver:ro
+      - minio-data:/backup/minio:ro
+      - ./backup:/backup/output
+    command: >
+      /bin/sh -c "
+      mkdir -p /backup/output;
+      echo '0 2 * * * tar -czf /backup/output/backup-$$(date +%Y%m%d%H%M%S).tar.gz /backup/sqlserver /backup/minio' > /var/spool/cron/crontabs/root;
+      echo '0 3 * * * find /backup/output -name \"backup-*.tar.gz\" -type f -mtime +7 -delete' >> /var/spool/cron/crontabs/root;
+      crond -f -d 8
+      "
+    networks:
+      - backend-orchid
+    restart: unless-stopped
+
+volumes:
+  minio-data:
+    driver: local
+  sqlserver-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  backend-orchid:
+    driver: bridge
