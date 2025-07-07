@@ -44,7 +44,7 @@ public class CategoryController {
     @ApiResponse(responseCode = "404", description = "Category not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
+    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable String id) {
         CategoryResponse category = categoryService.getCategoryById(id);
         if (category != null) {
             return ResponseEntity.ok(category);
@@ -74,7 +74,7 @@ public class CategoryController {
     @ApiResponse(responseCode = "404", description = "Category not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
+    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable String id, @RequestBody CategoryRequest request) {
         CategoryResponse updated = categoryService.updateCategory(id, request);
         if (updated != null) {
             return ResponseEntity.ok(updated);
@@ -91,7 +91,7 @@ public class CategoryController {
     @ApiResponse(responseCode = "404", description = "Category not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> deleteCategory(@PathVariable String id) {
         categoryService.deleteCategory(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Category deleted successfully");

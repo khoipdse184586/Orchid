@@ -1,8 +1,7 @@
 package com.orchids.pojo;
 
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.annotation.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,14 +15,10 @@ import java.util.List;
 @Setter
 public class Order {
     @Id
-    private String id;
-
-    @DBRef
+    private String orderId;
     private Account account;
     private LocalDateTime orderDate;
     private String orderStatus;
     private BigDecimal totalAmount;
-
-    @DBRef
     private List<OrderDetail> orderDetails;
 }

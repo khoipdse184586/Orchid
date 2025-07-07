@@ -23,7 +23,7 @@ public class RoleController {
     private RoleService roleService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<Role> getRole(@PathVariable Long id) {
+    public ResponseEntity<Role> getRole(@PathVariable String id) {
         return ResponseEntity.ok(roleService.getRole(id));
     }
 
@@ -40,7 +40,7 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Role> updateRole(@PathVariable Long id, @RequestBody Role role) {
+    public ResponseEntity<Role> updateRole(@PathVariable String id, @RequestBody Role role) {
         if (role.getRoleId() == null || !role.getRoleId().equals(id)) {
             throw new IllegalArgumentException("Role ID in path and body must match");
         }
@@ -48,7 +48,7 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteRole(@PathVariable String id) {
         Role role = roleService.getRole(id);
         if (role != null) {
             roleService.deleteRole(id);

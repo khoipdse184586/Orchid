@@ -42,7 +42,7 @@ public class OrderController {
     @ApiResponse(responseCode = "404", description = "Order not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @GetMapping("/{id}")
-    public ResponseEntity<OrderItemResponse> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<OrderItemResponse> getOrderById(@PathVariable String id) {
         OrderItemResponse order = orderService.getOrderById(id);
         if (order != null) {
             return ResponseEntity.ok(order);
@@ -72,7 +72,7 @@ public class OrderController {
     @ApiResponse(responseCode = "404", description = "Order not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<OrderItemResponse> updateOrder(@PathVariable Long id, @RequestBody OrderItemRequest request) {
+    public ResponseEntity<OrderItemResponse> updateOrder(@PathVariable String id, @RequestBody OrderItemRequest request) {
         OrderItemResponse updated = orderService.updateOrder(id, request);
         if (updated != null) {
             return ResponseEntity.ok(updated);
@@ -89,7 +89,7 @@ public class OrderController {
     @ApiResponse(responseCode = "404", description = "Order not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteOrder(@PathVariable String id) {
         orderService.deleteOrder(id);
         return ResponseEntity.noContent().build();
     }

@@ -2,6 +2,7 @@ package com.orchids.security;
 
 import com.orchids.pojo.Account;
 import com.orchids.repository.AccountRepository;
+import com.orchids.repository.RoleRepository;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -19,21 +20,27 @@ public class JwtUtil {
     private final long EXPIRATION_TIME = 864_000_000; // 10 days
 
     private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
 
-    // Constructor để Spring inject AccountRepository
-    public JwtUtil(AccountRepository accountRepository) {
+    // Constructor để Spring inject AccountRepository và RoleRepository
+    public JwtUtil(AccountRepository accountRepository, RoleRepository roleRepository) {
         this.accountRepository = accountRepository;
+        this.roleRepository = roleRepository;
     }
 
     // Generate token với role
     public String generateToken(String username) {
         Account account = accountRepository.findByAccountName(username);
-        if (account == null || account.getRole() == null) {
+        if (account == null) {
             throw new IllegalArgumentException("Account or role not found");
+        }
+        String roleName = null;
+        if (account.getRole() != null) {
+            roleName = account.getRole().getRoleName();
         }
         return Jwts.builder()
                 .setSubject(username)
-                .claim("role", account.getRole().getRoleName()) // Lấy role từ account
+                .claim("role", roleName)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key, SignatureAlgorithm.HS256)

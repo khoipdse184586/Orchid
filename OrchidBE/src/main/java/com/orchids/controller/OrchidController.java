@@ -44,7 +44,7 @@ public class OrchidController {
     @ApiResponse(responseCode = "404", description = "Orchid not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @GetMapping("/{id}")
-    public ResponseEntity<OrchidResponse> getOrchidById(@PathVariable Long id) {
+    public ResponseEntity<OrchidResponse> getOrchidById(@PathVariable String id) {
         OrchidResponse orchid = orchidService.getOrchidById(id);
         if (orchid != null) {
             return ResponseEntity.ok(orchid);
@@ -60,7 +60,7 @@ public class OrchidController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved orchids by category")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<OrchidResponse>> getOrchidsByCategory(@PathVariable Long categoryId) {
+    public ResponseEntity<List<OrchidResponse>> getOrchidsByCategory(@PathVariable String categoryId) {
         List<OrchidResponse> orchids = orchidService.getOrchidsByCategory(categoryId);
         return ResponseEntity.ok(orchids);
     }
@@ -87,7 +87,7 @@ public class OrchidController {
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OrchidResponse> updateOrchid(
-            @PathVariable Long id,
+            @PathVariable String id,
             @ModelAttribute OrchidRequest request) {
 
         OrchidResponse updated = orchidService.updateOrchid(id, request);
@@ -106,7 +106,7 @@ public class OrchidController {
     @ApiResponse(responseCode = "404", description = "Orchid not found")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteOrchid(@PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> deleteOrchid(@PathVariable String id) {
         orchidService.deleteOrchid(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Orchid deleted successfully");

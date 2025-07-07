@@ -6,12 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @SpringBootApplication
-@EntityScan(basePackages = "com.orchids.pojo")
 @ComponentScan(basePackages = {
         "com.orchids.controller",
         "com.orchids.service",
@@ -19,7 +17,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.orchids.config",
         "com.orchids.security"
 })
-@EnableJpaRepositories(basePackages = {"com.orchids.repository"})
+@EnableMongoRepositories(basePackages = "com.orchids.repository")
 public class OrchidServiceApplication implements CommandLineRunner {
     @Autowired
     private RoleService roleService;
