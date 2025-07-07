@@ -1,31 +1,23 @@
 package com.orchids.pojo;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 
-@Entity
-@Table(name = "accounts")
+@Document(collection = "accounts")
 @Getter
 @Setter
 public class Account {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long accountId;
-
-    @Column(name = "account_name", unique = true)
+    private String accountId;
     private String accountName;
-
-    @Column(name = "email", unique = true)
     private String email;
-
-    @Column(name = "password")
     private String password;
 
-    @ManyToOne
-    @JoinColumn(name = "role_id")
+    @DBRef
     private Role role;
-
 }

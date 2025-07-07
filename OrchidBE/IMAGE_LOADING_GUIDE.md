@@ -182,3 +182,10 @@ orchid.orchidUrl.replace("http://minio:9000", "http://localhost:9000");
 ```
 
 **Kết quả**: Ảnh sẽ hiển thị bình thường! 🎉
+
+C:\Users\khoi>C:\Users\khoi\Downloads\mc.exe alias set myminio http://localhost:9000 orchid_admin SecurePassword@1234
+Added `myminio` successfully.
+
+C:\Users\khoi>
+C:\Users\khoi>C:\Users\khoi\Downloads\mc.exe anonymous set download myminio/orchid-bucket
+Access permission for `myminio/orchid-bucket` is set to `download`

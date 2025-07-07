@@ -36,6 +36,18 @@ services:
           memory: 1G
     restart: unless-stopped
 
+  # MongoDB Service for migration
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend-orchid
+    restart: unless-stopped
+
   # Database Initialization Service
   db-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -226,6 +238,8 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  mongo-data:
     driver: local
 
 networks:

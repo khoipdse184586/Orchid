@@ -1,29 +1,26 @@
 package com.orchids.pojo;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Entity
-@Table(name = "order_details")
+@Document(collection = "order_details")
 @Getter
 @Setter
 public class OrderDetail {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    private String id;
     private BigDecimal price;
     private Integer quantity;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    @DBRef
     private Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "orchid_id")
+    @DBRef
     private Orchid orchid;
 }

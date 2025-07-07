@@ -1,23 +1,19 @@
 package com.orchids.pojo;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import lombok.*;
-
 import java.util.List;
-
 
 @Getter
 @Setter
-@Entity
-@Table(name = "roles")
+@Document(collection = "roles")
 public class Role {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long roleId;
-
-    @Column(name = "role_name")
+    private String roleId;
     private String roleName;
 
-    @OneToMany(mappedBy = "role")
+    @DBRef
     private List<Account> accounts;
 }
