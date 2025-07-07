@@ -2,9 +2,7 @@ package com.orchids.service;
 
 import com.orchids.dto.OrchidRequest;
 import com.orchids.dto.OrchidResponse;
-import com.orchids.pojo.Category;
 import com.orchids.pojo.Orchid;
-import com.orchids.repository.CategoryRepository;
 import com.orchids.repository.OrchidRepository;
 import com.orchids.service.minio.MinioService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +16,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrchidServiceImpl implements OrchidService {
     private final OrchidRepository orchidRepository;
-    private final CategoryRepository categoryRepository;
     private final MinioService minioService;
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -34,21 +31,14 @@ public class OrchidServiceImpl implements OrchidService {
         orchid.setPrice(request.getPrice());
         orchid.setIsNatural(request.getIsNatural());
         orchid.setStatus("ACTIVE");
-        
-        // Set category
-        if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found with ID: " + request.getCategoryId()));
-            orchid.setCategory(category);
-        }
-        
+        // Set category if needed
         Orchid saved = orchidRepository.save(orchid);
         return toResponse(saved);
     }
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public OrchidResponse updateOrchid(Long orchidId, OrchidRequest request) {
+    public OrchidResponse updateOrchid(String orchidId, OrchidRequest request) {
         String presignedImageUrl = null;
         if (request.getOrchidUrl() != null && !request.getOrchidUrl().isEmpty()) {
             presignedImageUrl = minioService.uploadFileAndGetPresignedUrl(request.getOrchidUrl());
@@ -60,21 +50,14 @@ public class OrchidServiceImpl implements OrchidService {
         orchid.setPrice(request.getPrice());
         orchid.setIsNatural(request.getIsNatural());
         orchid.setStatus("ACTIVE");
-        
-        // Update category
-        if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found with ID: " + request.getCategoryId()));
-            orchid.setCategory(category);
-        }
-        
+        // Update category if needed
         Orchid updated = orchidRepository.save(orchid);
         return toResponse(updated);
     }
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public void deleteOrchid(Long orchidId) {
+    public void deleteOrchid(String orchidId) {
         Orchid orchid = orchidRepository.findById(orchidId).orElseThrow(() -> new RuntimeException("Orchid not found"));
         orchid.setStatus("DELETED");
         orchidRepository.save(orchid);
@@ -82,7 +65,7 @@ public class OrchidServiceImpl implements OrchidService {
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
-    public OrchidResponse getOrchidById(Long orchidId) {
+    public OrchidResponse getOrchidById(String orchidId) {
         Orchid orchid = orchidRepository.findById(orchidId).orElseThrow();
         return toResponse(orchid);
     }
@@ -103,16 +86,11 @@ public class OrchidServiceImpl implements OrchidService {
         response.setOrchidUrl(orchid.getOrchidUrl());
         response.setPrice(orchid.getPrice());
         response.setIsNatural(orchid.getIsNatural());
-        
-        // Set category information
-        if (orchid.getCategory() != null) {
-            response.setCategoryId(orchid.getCategory().getCategoryId());
-        }
-        
+        // Set categoryId if needed
         return response;
     }
     @Override
-    public List<OrchidResponse> getOrchidsByCategory(Long categoryId) {
+    public List<OrchidResponse> getOrchidsByCategory(String categoryId) {
         List<Orchid> orchids = orchidRepository.findByCategory_CategoryId(categoryId);
         return orchids.stream().map(this::toResponse).collect(Collectors.toList());
     }

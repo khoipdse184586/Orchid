@@ -29,7 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public CategoryResponse updateCategory(Long categoryId, CategoryRequest request) {
+    public CategoryResponse updateCategory(String categoryId, CategoryRequest request) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         category.setCategoryName(request.getCategoryName());
@@ -40,7 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public void deleteCategory(Long categoryId) {
+    public void deleteCategory(String categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         category.setStatus("DELETED");
@@ -48,7 +48,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryResponse getCategoryById(Long categoryId) {
+    public CategoryResponse getCategoryById(String categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         return toResponse(category);

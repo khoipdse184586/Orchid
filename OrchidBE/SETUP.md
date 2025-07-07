@@ -1,9 +1,9 @@
-# Hướng dẫn chạy lại Docker Orchid Service
+# Hướng dẫn chạy lại Docker Orchid Service (MongoDB)
 
 ## 📋 Yêu cầu trước khi chạy
 
 - Docker và Docker Compose đã được cài đặt
-- Port 8080, 1433, 9000, 9001, 3000, 9090 không bị chiếm dụng
+- Port 8080, 27017, 9000, 9001, 3000, 9090 không bị chiếm dụng
 
 ## 🚀 Các bước chạy lại từ đầu
 
@@ -25,9 +25,6 @@ docker system prune -a
 Tạo file `.env` trong thư mục gốc với nội dung:
 
 ```env
-# Database Configuration
-SPRING_DATASOURCE_PASSWORD=StrongPassword123!
-
 # MinIO Configuration
 MINIO_ROOT_USER=orchid_admin
 MINIO_ROOT_PASSWORD=SecurePassword@1234
@@ -49,25 +46,14 @@ SPRING_PROFILES_ACTIVE=docker
 ### 3. Khởi động infrastructure services trước
 
 ```bash
-# Khởi động SQL Server và MinIO trước
-docker-compose up -d sqlserver minio
+# Khởi động MongoDB và MinIO trước
+docker-compose up -d mongo minio
 
-# Chờ các services khởi động hoàn tất (khoảng 60-90 giây)
-docker-compose logs -f sqlserver
+# Chờ các services khởi động hoàn tất (khoảng 30-60 giây)
+docker-compose logs -f mongo
 ```
 
-### 4. Tạo database OrchidDB
-
-```bash
-# Đợi SQL Server ready (khi thấy "SQL Server is now ready for client connections")
-# Sau đó tạo database
-docker-compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "StrongPassword123!" -C -Q "CREATE DATABASE OrchidDB"
-
-# Kiểm tra database đã tạo thành công
-docker-compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "StrongPassword123!" -C -Q "SELECT name FROM sys.databases WHERE name = 'OrchidDB'"
-```
-
-### 5. Khởi động tất cả services
+### 4. Khởi động tất cả services
 
 ```bash
 # Khởi động toàn bộ stack
@@ -87,7 +73,7 @@ docker-compose ps
 
 # Xem logs của service cụ thể
 docker-compose logs -f orchid-service
-docker-compose logs -f sqlserver
+docker-compose logs -f mongo
 docker-compose logs -f minio
 ```
 
@@ -120,20 +106,21 @@ docker-compose logs orchid-service
 docker-compose restart orchid-service
 
 # Nếu vẫn lỗi, kiểm tra kết nối database
-docker-compose exec orchid-service ping sqlserver
+# Kiểm tra logs của mongo
+docker-compose logs mongo
 ```
 
-### Nếu SQL Server không khởi động
+### Nếu MongoDB không khởi động
 
 ```bash
 # Kiểm tra logs
-docker-compose logs sqlserver
+docker-compose logs mongo
 
 # Kiểm tra port
-netstat -an | findstr :1433
+netstat -an | findstr :27017
 
-# Restart SQL Server
-docker-compose restart sqlserver
+# Restart MongoDB
+docker-compose restart mongo
 ```
 
 ### Nếu MinIO không khởi động
@@ -165,7 +152,8 @@ docker-compose restart minio
 docker-compose exec backup-service ls -la /backup/output
 
 # Manual backup
-docker run --rm -v orchidbe_sqlserver-data:/source -v $(pwd)/backup:/backup alpine tar -czf /backup/sqlserver-backup.tar.gz /source
+# (Thay đổi volume nếu muốn backup MongoDB)
+docker run --rm -v orchidbe_mongo-data:/source -v $(pwd)/backup:/backup alpine tar -czf /backup/mongo-backup.tar.gz /source
 ```
 
 ## 🔧 Lệnh hữu ích khác
@@ -196,29 +184,25 @@ docker network prune
 ### Development mode
 
 ```bash
-# Chạy chỉ database và MinIO cho development
-docker-compose up -d sqlserver minio
+# Chạy chỉ MongoDB và MinIO cho development
+docker-compose up -d mongo minio
 
 # Chạy Spring Boot locally với application.properties cấu hình:
-# spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=OrchidDB;trustServerCertificate=true
-# spring.datasource.username=sa
-# spring.datasource.password=StrongPassword123!
+# spring.data.mongodb.uri=mongodb://localhost:27017/orchid
 ```
 
 ## 🚨 Lưu ý quan trọng
 
-1. **Đợi SQL Server khởi động hoàn tất** trước khi tạo database
-2. **Tạo database OrchidDB** là bước bắt buộc
-3. **Kiểm tra ports** không bị chiếm dụng
-4. **Sử dụng file .env** để quản lý môi trường
-5. **Backup dữ liệu** thường xuyên
+1. **Đợi MongoDB khởi động hoàn tất** trước khi start ứng dụng
+2. **Kiểm tra ports** không bị chiếm dụng
+3. **Sử dụng file .env** để quản lý môi trường
+4. **Backup dữ liệu** thường xuyên
 
 ## 📝 Thứ tự khởi động khuyến nghị
 
-1. `sqlserver` + `minio` (infrastructure)
-2. Tạo database `OrchidDB`
-3. `orchid-service` (application)
-4. `prometheus` + `grafana` (monitoring)
-5. `backup-service` (backup)
+1. `mongo` + `minio` (infrastructure)
+2. `orchid-service` (application)
+3. `prometheus` + `grafana` (monitoring)
+4. `backup-service` (backup)
 
 Theo thứ tự này sẽ đảm bảo các dependencies được khởi động đúng cách.

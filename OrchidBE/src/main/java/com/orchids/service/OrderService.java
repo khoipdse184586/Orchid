@@ -6,9 +6,9 @@ import java.util.List;
 
 public interface OrderService {
     OrderItemResponse createOrder(OrderItemRequest request);
-    OrderItemResponse getOrderById(Long orderId);
+    OrderItemResponse getOrderById(String orderId);
     List<OrderItemResponse> getAllOrders();
-    void deleteOrder(Long orderId);
-    OrderItemResponse updateOrder(Long orderId, OrderItemRequest request);
+    void deleteOrder(String orderId);
+    OrderItemResponse updateOrder(String orderId, OrderItemRequest request);
     List<OrderItemResponse> getOrdersForCurrentUser();
 }

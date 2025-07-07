@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,8 +44,8 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderDetailResponse toOrderDetailResponse(OrderDetail detail) {
         OrderDetailResponse response = new OrderDetailResponse();
-        response.setId(detail.getId());
-        response.setProductId(detail.getOrchid() != null ? detail.getOrchid().getOrchidId() : null);
+        response.setId(detail.getOrderDetailId());
+        response.setProductId(detail.getOrchid().getOrchidId() != null ? detail.getOrchid().getOrchidId() : null);
         response.setOrchidName(detail.getOrchid() != null ? detail.getOrchid().getOrchidName() : null);
         response.setOrchidUrl(detail.getOrchid() != null ? detail.getOrchid().getOrchidUrl() : null);
         response.setQuantity(detail.getQuantity());
@@ -54,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderItemResponse toResponse(Order order) {
         OrderItemResponse response = new OrderItemResponse();
-        response.setOrchidId(order.getId());
+        response.setOrchidId(order.getOrderId());
         response.setOrderDate(order.getOrderDate());
         response.setOrderStatus(order.getOrderStatus());
         response.setPrice(order.getTotalAmount() != null ? order.getTotalAmount().doubleValue() : 0.0);
@@ -77,10 +78,10 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(request.getOrderStatus() != null ? request.getOrderStatus() : "NEW");
         order.setTotalAmount(BigDecimal.valueOf(request.getPrice() * request.getQuantity()));
         if (request.getAccountId() != null) {
-            Optional<Account> accountOpt = accountRepository.findById(request.getAccountId());
-            accountOpt.ifPresent(order::setAccount);
+            accountRepository.findById(request.getAccountId()).ifPresent(order::setAccount);
         }
         // You can map order details from request if needed
+
         return order;
     }
 
@@ -92,17 +93,26 @@ public class OrderServiceImpl implements OrderService {
         }
         Account currentAccount = accountRepository.findByAccountName(getCurrentUsername());
         Order order = toEntity(request);
-        order.setAccount(currentAccount);
+        if (currentAccount != null) {
+            order.setAccount(currentAccount);
+        }
         Order savedOrder = orderRepository.save(order);
 
-        // Save OrderDetail for the purchased orchid
+        // Create and save OrderDetail for the purchased orchid
         if (request.getOrchidId() != null) {
             OrderDetail detail = new OrderDetail();
-            detail.setOrder(savedOrder);
+            detail.setOrderId(savedOrder.getOrderId());
             detail.setQuantity(request.getQuantity());
             detail.setPrice(BigDecimal.valueOf(request.getPrice()));
             orchidRepository.findById(request.getOrchidId()).ifPresent(detail::setOrchid);
-            orderDetailRepository.save(detail);
+            OrderDetail savedDetail = orderDetailRepository.save(detail);
+            
+            // Update the order's orderDetails list
+            if (savedOrder.getOrderDetails() == null) {
+                savedOrder.setOrderDetails(new ArrayList<>());
+            }
+            savedOrder.getOrderDetails().add(savedDetail);
+            savedOrder = orderRepository.save(savedOrder);
         }
 
         return toResponse(savedOrder);
@@ -110,7 +120,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
-    public OrderItemResponse getOrderById(Long orderId) {
+    public OrderItemResponse getOrderById(String orderId) {
         return orderRepository.findById(orderId)
             .filter(order -> {
                 // Admins can see all, users only their own
@@ -121,7 +131,10 @@ public class OrderServiceImpl implements OrderService {
                     return true;
                 }
                 // For users, check if the order's account username matches
-                return order.getAccount() != null && username.equals(order.getAccount().getAccountName());
+                if (order.getAccount() != null) {
+                    return username.equals(order.getAccount().getAccountName());
+                }
+                return false;
             })
             .map(this::toResponse)
             .orElse(null);
@@ -137,13 +150,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public void deleteOrder(Long orderId) {
+    public void deleteOrder(String orderId) {
         orderRepository.deleteById(orderId);
     }
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public OrderItemResponse updateOrder(Long orderId, OrderItemRequest request) {
+    public OrderItemResponse updateOrder(String orderId, OrderItemRequest request) {
         return orderRepository.findById(orderId).map(order -> {
             order.setOrderDate(request.getOrderDate() != null ? request.getOrderDate() : order.getOrderDate());
             order.setOrderStatus(request.getOrderStatus() != null ? request.getOrderStatus() : order.getOrderStatus());
