@@ -19,6 +19,8 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private AccountRepository accountRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
@@ -35,16 +37,16 @@ public class DataLoader implements CommandLineRunner {
             // Create admin account
             Account adminAccount = new Account();
             adminAccount.setAccountName("admin");
-            adminAccount.setEmail("admin");
-            adminAccount.setPassword("@1");
+            adminAccount.setEmail("admin@gmail.com");
+            adminAccount.setPassword(passwordEncoder.encode("SecurePassword@123"));
             adminAccount.setRole(adminRole);
             accountRepository.save(adminAccount);
 
             // Create user account
             Account userAccount = new Account();
             userAccount.setAccountName("user");
-            userAccount.setEmail("user");
-            userAccount.setPassword("@1");
+            userAccount.setEmail("user@gmail.com");
+            userAccount.setPassword(passwordEncoder.encode("SecurePassword@123"));
             userAccount.setRole(userRole);
             accountRepository.save(userAccount);
         }

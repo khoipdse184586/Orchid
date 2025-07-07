@@ -13,6 +13,7 @@ services:
       MSSQL_PID: Express
     volumes:
       - sqlserver-data:/var/opt/mssql
+      - ./init-db.sql:/init-db.sql
     networks:
       - backend-orchid
     healthcheck:
@@ -34,6 +35,29 @@ services:
           cpus: "0.5"
           memory: 1G
     restart: unless-stopped
+
+  # Database Initialization Service
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-StrongPassword123!}
+    volumes:
+      - ./init-db.sql:/init-db.sql
+    networks:
+      - backend-orchid
+    command: >
+      /bin/bash -c "
+      echo 'Waiting for SQL Server to be ready...'
+      sleep 30
+      echo 'Creating OrchidDB database...'
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '${SPRING_DATASOURCE_PASSWORD:-StrongPassword123!}' -i /init-db.sql
+      echo 'Database initialization completed.'
+      "
+    restart: "no"
 
   # MinIO Object Storage
   minio:
@@ -78,6 +102,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     environment:
       # Database Configuration
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=OrchidDB;trustServerCertificate=true
@@ -90,7 +116,7 @@ services:
       SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.SQLServer2012Dialect
 
-      # MinIO Configuration - Sửa để khớp với biến môi trường
+      # MinIO Configuration
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-orchid_admin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-SecurePassword@1234}
