@@ -1,10 +1,8 @@
 package com.orchids.repository;
 
 import com.orchids.pojo.OrderDetail;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-@Repository
-public interface OrderDetailRepostiory extends JpaRepository<OrderDetail, Long> {
+public interface OrderDetailRepostiory extends MongoRepository<OrderDetail, String> {
     // Additional query methods can be defined here if needed
 }

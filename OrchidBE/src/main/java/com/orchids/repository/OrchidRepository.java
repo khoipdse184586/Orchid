@@ -1,13 +1,7 @@
 package com.orchids.repository;
 
 import com.orchids.pojo.Orchid;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.List;
-
-@Repository
-public interface OrchidRepository extends JpaRepository<Orchid, Long> {
-    List<Orchid> findByCategory_CategoryId(Long categoryId);
-    List<Orchid> findByStatus(String status);
+public interface OrchidRepository extends MongoRepository<Orchid, String> {
 }
